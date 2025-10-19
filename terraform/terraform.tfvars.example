@@ -1,0 +1,28 @@
+# Example Terraform Variables Configuration
+# Copy this file to terraform.tfvars and customize the values
+
+# AWS Region
+aws_region = "us-east-1"
+
+# Project name (used for resource naming)
+project_name = "observability-stack"
+
+# VPC and Subnet Configuration
+vpc_cidr            = "10.0.0.0/16"
+public_subnet_cidr  = "10.0.1.0/24"
+private_subnet_cidr = "10.0.2.0/24"
+
+# EC2 Instance Configuration
+instance_type = "t3.small"  # Options: t3.micro, t3.small, t3.medium, t3.large
+
+# SSH Key Pair (leave empty if you don't want SSH access)
+key_name = ""  # e.g., "my-key-pair"
+
+# Security Configuration
+# Replace with your IP address for better security
+# Example: "203.0.113.0/32" for a single IP
+allowed_ssh_cidr = "0.0.0.0/0"  # CIDR block allowed to SSH
+allowed_web_cidr = "0.0.0.0/0"  # CIDR block allowed to access web interfaces
+
+# Grafana Configuration
+grafana_admin_password = "admin123"  # Change this to a secure password
