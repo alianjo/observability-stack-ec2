@@ -22,7 +22,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Markdown Lint
         uses: articulate/actions-markdownlint@v1
@@ -46,7 +46,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check spelling
         uses: rojopolis/spellcheck-github-actions@0.35.0
