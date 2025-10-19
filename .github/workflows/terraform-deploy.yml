@@ -1,0 +1,88 @@
+name: Terraform Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Terraform action to perform'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - apply
+          - destroy
+
+env:
+  TF_VERSION: 1.6.0
+
+jobs:
+  terraform-deploy:
+    name: Terraform Deploy
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          cd terraform
+          terraform init
+
+      - name: Terraform Plan
+        run: |
+          cd terraform
+          terraform plan -input=false \
+            -var="aws_region=${{ secrets.AWS_REGION || 'us-east-1' }}" \
+            -var="project_name=observability-stack" \
+            -var="instance_type=${{ secrets.INSTANCE_TYPE || 't3.small' }}" \
+            -var="key_name=${{ secrets.SSH_KEY_NAME || '' }}" \
+            -var="grafana_admin_password=${{ secrets.GRAFANA_PASSWORD || 'admin123' }}" \
+            -out=tfplan
+
+      - name: Terraform Apply
+        if: github.event.inputs.action != 'destroy'
+        run: |
+          cd terraform
+          terraform apply -auto-approve tfplan
+
+      - name: Terraform Destroy
+        if: github.event.inputs.action == 'destroy'
+        run: |
+          cd terraform
+          terraform destroy -auto-approve \
+            -var="aws_region=${{ secrets.AWS_REGION || 'us-east-1' }}" \
+            -var="project_name=observability-stack" \
+            -var="instance_type=${{ secrets.INSTANCE_TYPE || 't3.small' }}" \
+            -var="key_name=${{ secrets.SSH_KEY_NAME || '' }}" \
+            -var="grafana_admin_password=${{ secrets.GRAFANA_PASSWORD || 'admin123' }}"
+
+      - name: Output URLs
+        if: github.event.inputs.action != 'destroy'
+        run: |
+          cd terraform
+          echo "## Deployment Outputs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Service URLs:" >> $GITHUB_STEP_SUMMARY
+          echo "- Flask App: $(terraform output -raw flask_app_url)" >> $GITHUB_STEP_SUMMARY
+          echo "- Prometheus: $(terraform output -raw prometheus_url)" >> $GITHUB_STEP_SUMMARY
+          echo "- Grafana: $(terraform output -raw grafana_url)" >> $GITHUB_STEP_SUMMARY
+          echo "- Loki: $(terraform output -raw loki_url)" >> $GITHUB_STEP_SUMMARY

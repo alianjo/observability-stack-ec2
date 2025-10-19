@@ -1,0 +1,48 @@
+name: Shell Script Validation
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'scripts/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'scripts/**'
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './scripts'
+          severity: warning
+          ignore_paths: |
+            node_modules
+            .git
+
+      - name: Verify scripts are executable
+        run: |
+          echo "Checking script permissions..."
+          for script in scripts/*.sh; do
+            if [ -f "$script" ]; then
+              if [ ! -x "$script" ]; then
+                echo "❌ $script is not executable"
+                exit 1
+              else
+                echo "✅ $script is executable"
+              fi
+            fi
+          done
